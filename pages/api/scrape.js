@@ -1,5 +1,5 @@
 const puppeteer = require("puppeteer")
-const cheerio = require("cheerio")
+// const cheerio = require("cheerio")
 const chrome = require("chrome-aws-lambda")
 
 /** The code below determines the executable location for Chrome to
@@ -59,7 +59,7 @@ const scrape = async (req, res) => {
       console.log("configuring chrome...")
       const options = await getOptions()
 
-      console.log("launching browser...")
+      console.log("launching browser...", options)
       const browser = await puppeteer.launch(options)
 
       console.log("opening new page...")
@@ -98,48 +98,51 @@ const scrape = async (req, res) => {
               return document.querySelector("body").innerHTML
             })
 
-      console.log("parse html...")
-      const $ = cheerio.load(html)
+      console.log("parse html...", html)
+      const text = await page.$eval("*", (el) => el.innerText)
+      // const $ = cheerio.load(html)
 
-      console.log("initializing empty result set...")
-      // create empty result set, assume all selectors will be of the same length
-      let result = []
-      for (let i = 0; i < $(properties[0].selector).length; i++) {
-        result.push({})
-      }
+      // console.log("initializing empty result set...")
+      // // create empty result set, assume all selectors will be of the same length
+      // let result = []
+      // for (let i = 0; i < $(properties[0].selector).length; i++) {
+      //   result.push({})
+      // }
 
-      console.log("evaluate html for results...")
-      // fill result set by parsing the html for each property selector
-      properties.forEach((property) => {
-        // {"name":"url","selector":"a[data-click-id='body']","type":"href"}
-        $(property.selector)
-          .slice(0, result.length)
-          .each((i, elem) => {
-            // i is the element index in the cheerio selection
-            result[i][property.name] = ""
-            if (property.type === "href") {
-              let href = $(elem).attr("href")
-              if (typeof href !== "undefined") {
-                if (href.charAt(0) === "/") {
-                  href = url.split("/").slice(0, 3).join("/") + href
-                }
-                result[i][property.name] = href
-              }
-            } else {
-              result[i][property.name] = $(elem)
-                .text()
-                .replace(/\r?\n|\r/g, "")
-                .trim()
-            }
-          })
-      })
+      // console.log("evaluate html for results...")
+      // // fill result set by parsing the html for each property selector
+      // properties.forEach((property) => {
+      //   // {"name":"url","selector":"a[data-click-id='body']","type":"href"}
+      //   $(property.selector)
+      //     .slice(0, result.length)
+      //     .each((i, elem) => {
+      //       // i is the element index in the cheerio selection
+      //       result[i][property.name] = ""
+      //       if (property.type === "href") {
+      //         let href = $(elem).attr("href")
+      //         if (typeof href !== "undefined") {
+      //           if (href.charAt(0) === "/") {
+      //             href = url.split("/").slice(0, 3).join("/") + href
+      //           }
+      //           result[i][property.name] = href
+      //         }
+      //       } else {
+      //         result[i][property.name] = $(elem)
+      //           .text()
+      //           .replace(/\r?\n|\r/g, "")
+      //           .trim()
+      //       }
+      //     })
+      // })
 
       console.log("closing browser...")
       await browser.close()
 
       console.log("done.")
-      res.status(200).json({ statusCode: 200, result, html })
+      // res.status(200).json({ statusCode: 200, result, html })
+      res.status(200).json({ statusCode: 200, text })
     } catch (error) {
+      console.log(error.message)
       res.status(500).json({ statusCode: 500, error })
     }
   } else {
